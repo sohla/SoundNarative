@@ -47,15 +47,15 @@
 (
 
 var window, mainView,newSearchView,stackView,queryView,resultsView,waitingView,playView;
-var addStack,removeStack,addResult,switchToStack;
+var addStack,removeStack,addResult,switchToStack, transportView;
 var searchViews = [];
 var stackIndexes = [\newSearchIdx,\queryIdx,\waitingIdx,\resultsIdx,\playIdx];
 var dir = PathName.new("~/Music/SoundNarative/");
 var fastSearch;
 
 //var dirPath = "/Volumes/Steph2015/*".postln;
-var dirPath = "/Volumes/Steph2017/SFX/*".postln;
-//var dirPath = "~/Music/*";
+//var dirPath = "/Volumes/Steph2017/SFX/*".postln;
+var dirPath = "~/Music/*";
 
 s.boot;
 QtGUI.palette = QPalette.dark; 
@@ -150,6 +150,83 @@ waitingView =({|i|
 	);
 });
 
+
+//------------------------------------------------------
+// transportView
+//------------------------------------------------------
+transportView = ({
+
+	var fontSize = 9;
+	var k,view;
+	var buttonAction = {|button|
+		switch(button.value,
+			0,{
+				button.parent.children(View).do({|o|
+					o.enabled_(true)
+				});
+
+				},
+			1,{		
+				var c = view.children(View);
+				c.remove(button);
+				c.do({|o|
+					o.enabled_(false)
+				});
+			});
+
+	};
+	view = View().layout_(HLayout(
+
+				 Button()
+					.states_([
+						["SLoop In"],
+						["SLoop Out",Color.black,Color.green.alpha_(0.3)]
+
+						])
+					.action_(buttonAction)
+					.minHeight_(30)
+					.maxWidth_(50)
+					.font_(Font(size:fontSize)),
+				 Button()
+					.states_([
+						["Loop In"],
+						["Loop Out",Color.black,Color.green.alpha_(0.3)]
+
+						])
+					.action_(buttonAction)
+					.minHeight_(30)
+					.maxWidth_(50)
+					.font_(Font(size:fontSize)),
+
+				 Button()
+					.states_([
+						["1Shot In"],
+						["1Shot Out",Color.black,Color.green.alpha_(0.3)]
+
+						])
+					.action_(buttonAction)
+					.minHeight_(30)
+					.maxWidth_(50)
+					.font_(Font(size:fontSize)),
+
+
+				StaticText().string_("fadeIn").font_(Font(size:fontSize)),
+				Knob()
+					.minHeight_(30)
+					.maxWidth_(30)
+					.valueAction_(0.3),
+				StaticText().string_("fadeOut").font_(Font(size:fontSize)),
+				k = Knob()
+
+					.minHeight_(30)
+					.maxWidth_(30)
+					.valueAction_(0.7)
+
+		));
+		
+});
+
+
 //------------------------------------------------------
 // playView
 //------------------------------------------------------
@@ -185,6 +262,11 @@ playView =({|i,sndResult|
 		});
 
 	};
+
+	var loopAction = {|button|
+		//•TODO 
+	};
+
 
 	var sliderAction = {|slider|
 		s.sendMsg("/n_set",samplerNode,\volume,slider.value);
@@ -234,30 +316,23 @@ playView =({|i,sndResult|
 	GridLayout.rows(
 			[
 				Button()
-					.states_([["cancel"]])
-					.maxWidth_(50)
+					.states_([["❌"]])
+					.maxWidth_(30)
 					.minHeight_(30)
 					.action_({|b|cancelButtonAction.(b)}),
 
 				StaticText()
 					.string_(sndResult.basename.splitext[0])
-					.align_(\center)
-					.font_(Font(size:24)),
-				
-				Button()
-					.minHeight_(30)
-					.maxWidth_(50)
-					.states_([
-						["Play"],
-						["Stop",Color.black,Color.green.alpha_(0.3)]])
-					.action_({|b|buttonAction.(b)}),
+					.align_(\left)
+					.font_(Font(size:12)),
+				transportView.(),
 
 				
-				StaticText().string_("volume"),
+				StaticText().string_("volume").font_(Font(size:9)),
 				
 				sliderView = Slider()
 					.orientation_(\horizontal)
-					.maxHeight_(40)
+					.maxHeight_(20)
 					.value_(0.5)
 					.action_({|a|sliderAction.(a)});
 
@@ -265,22 +340,22 @@ playView =({|i,sndResult|
 
 			],[
 				[sfv = SoundFileView()
-					.maxHeight_(120)
+					.maxHeight_(80)
 					.gridOn_(false)
 					.backColor_(Color.white.alpha_(0.7))
 					.rmsColor_(Color.blue.alpha_(0.4))
 					.peakColor_(Color.blue.alpha_(0.3))
 					//.selectionColor_(0, Color.black.alpha_(0.2))
 
-					,columns:5],
+					,columns:8],
 
 
 
 		]
-	).setMinColumnWidth(1,350)
+	).setMinColumnWidth(1,150)
 	).enabled_(false)
 	.background_(Color.rand(0.1,0.9))
-	.maxHeight_(200)
+	.maxHeight_(160)
 });
 
 
@@ -384,12 +459,16 @@ resultsView =({|i|
 		)
 	);
 
-});//------------------------------------------------------
+});
+
+
+//------------------------------------------------------
 // addResult
 //------------------------------------------------------
 
 addResult =({|i,sndResult,count|
 
+	var fontSize = 16;
 
 	var buttonAction = {|button|
 
@@ -402,42 +481,35 @@ addResult =({|i,sndResult,count|
 		var view = View()
 			.layout_( HLayout(
 				StaticText()
-					.background_(Color.grey(0.1,0.1))
+					.background_(Color.green(0.7,0.2))
+					.stringColor_(Color.white)
+						
 
 					.string_(" " + (count+1) + "\t🔊" + sndResult.basename.splitext[0])
 					.align_(\left)
-					.font_(Font(size:24)),
+					.font_(Font(size:fontSize))
+					.mouseDownAction_(buttonAction),
 
 				StaticText()
-					.background_(Color.grey(0.1,0.1))
+					.background_(Color.green(0.7,0.2))
 					.string_(count)
 					.align_(\center)
-					.font_(Font(size:16))
+					.font_(Font(size:fontSize))
 					.maxWidth_(160)
+					.mouseDownAction_(buttonAction)
 					.onResize_({|btn|
 						SoundFile.use(sndResult, { |f| 
-							var dur = f.duration.round;
+							var dur = f.duration;
 							btn.string_( 
-								"🕓" + (dur/60).floor ++ ":" ++ (dur%60) ,
+								"🕓" + (dur/60).floor + "\'" + (dur%60).floor++ "\"" + ((dur%60).mod(1).round(1e-3)*1000) ++"",
 								Color.white,
 								Color.green(0.7,0.2)
 							);
 
 						})
-				})
-,
+					})
 
-				 Button()
-				.states_([[
-					"📢",
-					Color.white,
-					Color.green(0.7,0.2)
-				]])
-				.action_(buttonAction)
-				.minHeight_(80)
-				.maxWidth_(80)
-				.font_(Font(size:24))
-	        )
+			)
 	    );
 		view.layout.margins = [0,0,0,0];
 	    view;
