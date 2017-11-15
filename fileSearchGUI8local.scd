@@ -23,6 +23,7 @@
 // (
 // SynthDef("bufplayerMonoFS", { |bufnum = 0, volume = 0.0, gate = 1, attack=2.8, decay=2.8|
 // 	var son;
+
 // 	son = PlayBuf.ar(1,bufnum,BufRateScale.kr(bufnum),trigger:gate,loop:1,doneAction:0)
 // 	* EnvGen.kr(Env.asr(attack,1.0,decay,\sine),gate,doneAction:0) * volume.dbamp;
 
@@ -34,7 +35,6 @@
 // 	var son;
 // 	son = PlayBuf.ar(2,bufnum,BufRateScale.kr(bufnum),trigger:gate,loop:1,doneAction:0)
 // 	* EnvGen.kr(Env.asr(attack,1.0,decay,\sine),gate,doneAction:0) * volume.dbamp;
-
 // 	Out.ar(0, son);
 // 	//	Out.ar(0, son);
 // }).load(s);
@@ -58,8 +58,8 @@ var fastSearch;
 var dirPath = "~/Music/*";
 
 var gainSpec = ControlSpec(0.ampdb, 12, \db, step: 0.5, default: 0, units: " dB");
-var fadeInSpec = ControlSpec(0.1, 5.0, \lin, step: 0.1, default: 1.8, units: " secs");
-var fadeOutSpec = ControlSpec(0.1, 5.0, \lin, step: 0.1, default: 2.8, units: " secs");
+var fadeInSpec = ControlSpec(0.001, 5.0, \lin, step: 0.1, default: 1.8, units: " secs");
+var fadeOutSpec = ControlSpec(0.001, 5.0, \lin, step: 0.1, default: 2.8, units: " secs");
 
 
 s.boot;
@@ -159,7 +159,7 @@ waitingView =({|i|
 //------------------------------------------------------
 // transportView
 //------------------------------------------------------
-transportView = ({|samplerNode, buffer|
+transportView = ({|samplerNode, localBuf|
 
 	var fontSize = 9;
 	var k,view;
@@ -196,7 +196,7 @@ transportView = ({|samplerNode, buffer|
 		buttonAction.(button);
 		switch(button.value,
 			1,{"playing...".postln;
-			//s.sendMsg("/n_set",samplerNode,\gate,-1);
+
 			s.sendMsg("/n_set",samplerNode,\gate,1);
 			},
 			0,{"stopped".postln;
@@ -204,6 +204,7 @@ transportView = ({|samplerNode, buffer|
 			s.sendMsg("/n_set",samplerNode,\gate,0);
 		});
 	};
+
 
 
 	var oneShotButtonAction = { |button|
@@ -315,7 +316,6 @@ playView =({|i,sndResult|
 				);
 				view.enabled_(true);
 			}.defer;
-		});
 
 		localBuf.numChannels.switch(
 			1,{s.sendMsg("/s_new", "bufplayerMonoFS", samplerNode, 0, 0,\bufnum, localBuf.bufnum, \gate, 0);},
@@ -326,6 +326,12 @@ playView =({|i,sndResult|
 		s.sendMsg("/n_set",samplerNode,\attack,fadeInSpec.unmap(fadeInSpec.default));
 		s.sendMsg("/n_set",samplerNode,\decay,fadeOutSpec.unmap(fadeOutSpec.default));
 
+		});
+
+
+		// OSCpathResponder(s.addr, ['/n_end', samplerNode], { |time, resp, msg| 
+		//         resp.remove; 
+		// }).add; 
 	};
 
 	// //• encapsulate as a service (either freesound or a HD)
