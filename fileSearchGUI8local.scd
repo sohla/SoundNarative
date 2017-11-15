@@ -54,13 +54,13 @@ var dir = PathName.new("~/Music/SoundNarative/");
 var fastSearch;
 
 //var dirPath = "/Volumes/Steph2015/*".postln;
-//var dirPath = "/Volumes/Steph2017/SFX/*".postln;
-var dirPath = "~/Music/*";
+var dirPath = "/Volumes/Steph2017/SFX/*".postln;
+//var dirPath = "~/Music/*";
 
 var gainSpec = ControlSpec(0.ampdb, 12, \db, step: 0.5, default: 0.0, units: " db");
 var fadeInSpec = ControlSpec(0.001, 5.0, \lin, step: 0.1, default: 1.8, units: " secs");
 var fadeOutSpec = ControlSpec(0.001, 5.0, \lin, step: 0.1, default: 2.8, units: " secs");
-var pitchSpec = ControlSpec(0.25, 4, \lin, step: 0.01, default: 1, units: " pitch");
+var pitchSpec = ControlSpec(0.25, 4, \exp, step: 0.01, default: 1, units: " pitch");
 
 
 s.boot;
@@ -82,6 +82,7 @@ fastSearch = {|dir, fileTypes, searchString, itrFunc, completeFunc|
 	
 	});
 
+	// add AND to then search for file extension typest
 	cs = cs.copyFromStart(cs.size-3)++ " \\) -a \\(";
 
 
@@ -299,6 +300,7 @@ playView =({|i,sndResult|
 			[
 				Button()
 					.states_([["❌"]])
+					.font_(Font(size:9))
 					.maxWidth_(30)
 					.minHeight_(30)
 					.action_({|b|cancelButtonAction.(b)}),
