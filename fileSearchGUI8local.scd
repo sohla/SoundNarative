@@ -8,7 +8,7 @@
 
 // o = Server.local.options;
 // o.outDevice
-
+// 
 //
 // // Post the number of output channels
 //
@@ -21,19 +21,19 @@
 //
 
 // (
-// SynthDef("bufplayerMonoFS", { |bufnum = 0, volume = 0.0, gate = 1|
+// SynthDef("bufplayerMonoFS", { |bufnum = 0, volume = 0.0, gate = 1, attack=2.8, decay=2.8|
 // 	var son;
-// 	son = PlayBuf.ar(1,bufnum,BufRateScale.kr(bufnum),loop:1,doneAction:2)
-// 	* EnvGen.kr(Env.asr(2.8,1.0,2.8,\sine),gate,doneAction:2) * volume.dbamp;
+// 	son = PlayBuf.ar(1,bufnum,BufRateScale.kr(bufnum),trigger:gate,loop:1,doneAction:0)
+// 	* EnvGen.kr(Env.asr(attack,1.0,decay,\sine),gate,doneAction:0) * volume.dbamp;
 
 // 	Out.ar(0, son!2);
 // 	//	Out.ar(0, son!2);
 // }).load(s);
 
-// SynthDef("bufplayerStereoFS", { |bufnum = 0, volume = 0.0, gate = 1|
+// SynthDef("bufplayerStereoFS", { |bufnum = 0, volume = 0.0, gate = 1, attack=2.8, decay=2.8|
 // 	var son;
-// 	son = PlayBuf.ar(2,bufnum,BufRateScale.kr(bufnum),loop:1,doneAction:2)
-// 	* EnvGen.kr(Env.asr(2.8,1.0,2.8,\sine),gate,doneAction:2) * volume.dbamp;
+// 	son = PlayBuf.ar(2,bufnum,BufRateScale.kr(bufnum),trigger:gate,loop:1,doneAction:0)
+// 	* EnvGen.kr(Env.asr(attack,1.0,decay,\sine),gate,doneAction:0) * volume.dbamp;
 
 // 	Out.ar(0, son);
 // 	//	Out.ar(0, son);
@@ -57,7 +57,9 @@ var fastSearch;
 //var dirPath = "/Volumes/Steph2017/SFX/*".postln;
 var dirPath = "~/Music/*";
 
-var gainSpec = ControlSpec(0.ampdb, 1.ampdb, \db, step: 0.5, default: -10, units: " dB");
+var gainSpec = ControlSpec(0.ampdb, 12, \db, step: 0.5, default: 0, units: " dB");
+var fadeInSpec = ControlSpec(0.1, 5.0, \lin, step: 0.1, default: 1.8, units: " secs");
+var fadeOutSpec = ControlSpec(0.1, 5.0, \lin, step: 0.1, default: 2.8, units: " secs");
 
 
 s.boot;
@@ -194,13 +196,8 @@ transportView = ({|samplerNode, buffer|
 		buttonAction.(button);
 		switch(button.value,
 			1,{"playing...".postln;
-
-			buffer.numChannels.switch(
-				1,{s.sendMsg("/s_new", "bufplayerMonoFS", samplerNode, 0, 0,\bufnum, buffer.bufnum);},
-				2,{s.sendMsg("/s_new", "bufplayerStereoFS", samplerNode, 0, 0,\bufnum, buffer.bufnum);}
-			);
-			
-			s.sendMsg("/n_set",samplerNode,\volume,gainSpec.unmap(gainSpec.default));
+			//s.sendMsg("/n_set",samplerNode,\gate,-1);
+			s.sendMsg("/n_set",samplerNode,\gate,1);
 			},
 			0,{"stopped".postln;
 			//s.sendMsg("/n_free", samplerNode);
@@ -252,20 +249,10 @@ transportView = ({|samplerNode, buffer|
 					.action_(oneShotButtonAction)
 					.minHeight_(30)
 					.maxWidth_(50)
-					.font_(Font(size:fontSize)),
+					.font_(Font(size:fontSize));
 
 
-				StaticText().string_("fadeIn").font_(Font(size:fontSize)),
-				Knob()
-					.minHeight_(30)
-					.maxWidth_(30)
-					.valueAction_(0.3),
-				StaticText().string_("fadeOut").font_(Font(size:fontSize)),
-				k = Knob()
 
-					.minHeight_(30)
-					.maxWidth_(30)
-					.valueAction_(0.7)
 
 		));
 		
@@ -313,10 +300,9 @@ playView =({|i,sndResult|
 	// };
 
 
-	var sliderAction = {|o|
-		s.sendMsg("/n_set",samplerNode,\volume,gainSpec.map(o.value));
+	// var sliderAction = {|o|
 
-	};
+	// };
 
 	var onBufferRead = {|localBuf|
 		localBuf.loadToFloatArray(action:{ |data|
@@ -330,6 +316,16 @@ playView =({|i,sndResult|
 				view.enabled_(true);
 			}.defer;
 		});
+
+		localBuf.numChannels.switch(
+			1,{s.sendMsg("/s_new", "bufplayerMonoFS", samplerNode, 0, 0,\bufnum, localBuf.bufnum, \gate, 0);},
+			2,{s.sendMsg("/s_new", "bufplayerStereoFS", samplerNode, 0, 0,\bufnum, localBuf.bufnum, \gate, 0);}
+		);
+
+		s.sendMsg("/n_set",samplerNode,\volume,gainSpec.unmap(gainSpec.default));
+		s.sendMsg("/n_set",samplerNode,\attack,fadeInSpec.unmap(fadeInSpec.default));
+		s.sendMsg("/n_set",samplerNode,\decay,fadeOutSpec.unmap(fadeOutSpec.default));
+
 	};
 
 	// //• encapsulate as a service (either freesound or a HD)
@@ -345,8 +341,10 @@ playView =({|i,sndResult|
 		buffer = MP3.readToBuffer(s, sndResult,action:onBufferRead);
 	},{
 		buffer = Buffer.read(s, sndResult,action:onBufferRead);
-
 	});
+
+
+
 
 	// //• freesound load sound into mp3 buffer
 	// sndResult.retrievePreview(dir.asAbsolutePath,{|a|
@@ -372,14 +370,35 @@ playView =({|i,sndResult|
 					.font_(Font(size:12)),
 				transportView.(samplerNode,buffer),
 
+
+				StaticText().string_("fadeIn").font_(Font(size:9)),
+				Knob()
+					.minHeight_(30)
+					.maxWidth_(30)
+					.action_({|o|
+						s.sendMsg("/n_set",samplerNode,\attack,fadeInSpec.map(o.value));
+					})
+					.value_(fadeInSpec.unmap(fadeInSpec.default)),
+
+				StaticText().string_("fadeOut").font_(Font(size:9)),
+				k = Knob()
+
+					.minHeight_(30)
+					.maxWidth_(30)
+					.action_({|o|
+						s.sendMsg("/n_set",samplerNode,\decay,fadeOutSpec.map(o.value));
+					})
+					.value_(fadeOutSpec.unmap(fadeOutSpec.default)),
 				
 				StaticText().string_("volume").font_(Font(size:9)),
 				
 				sliderView = Slider()
 					.orientation_(\horizontal)
 					.maxHeight_(20)
-					.action_({|a|sliderAction.(a)})
-					.valueAction_(gainSpec.unmap(gainSpec.default));
+					.action_({|o|
+						s.sendMsg("/n_set",samplerNode,\volume,gainSpec.map(o.value));
+					})
+					.value_(gainSpec.unmap(gainSpec.default));
 
 
 
@@ -392,7 +411,7 @@ playView =({|i,sndResult|
 					.peakColor_(Color.blue.alpha_(0.3))
 					//.selectionColor_(0, Color.black.alpha_(0.2))
 
-					,columns:8],
+					,columns:11],
 
 
 
@@ -606,5 +625,10 @@ CmdPeriod.doOnce({window.close});
 
 
 )
+
+
+
+
+
 
 
