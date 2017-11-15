@@ -24,23 +24,23 @@
 // SynthDef("bufplayerMonoFS", { |bufnum = 0, volume = 0.0, gate = 1|
 // 	var son;
 // 	son = PlayBuf.ar(1,bufnum,BufRateScale.kr(bufnum),loop:1,doneAction:2)
-// 	* EnvGen.kr(Env.asr(2.8,1.0,2.8,\sine),gate,doneAction:2) * volume;
-//
+// 	* EnvGen.kr(Env.asr(2.8,1.0,2.8,\sine),gate,doneAction:2) * volume.dbamp;
+
 // 	Out.ar(0, son!2);
 // 	//	Out.ar(0, son!2);
 // }).load(s);
-//
+
 // SynthDef("bufplayerStereoFS", { |bufnum = 0, volume = 0.0, gate = 1|
 // 	var son;
 // 	son = PlayBuf.ar(2,bufnum,BufRateScale.kr(bufnum),loop:1,doneAction:2)
-// 	* EnvGen.kr(Env.asr(2.8,1.0,2.8,\sine),gate,doneAction:2) * volume;
-//
+// 	* EnvGen.kr(Env.asr(2.8,1.0,2.8,\sine),gate,doneAction:2) * volume.dbamp;
+
 // 	Out.ar(0, son);
 // 	//	Out.ar(0, son);
 // }).load(s);
-//
+
 // )
-//
+
 
 
 
@@ -56,6 +56,9 @@ var fastSearch;
 //var dirPath = "/Volumes/Steph2015/*".postln;
 //var dirPath = "/Volumes/Steph2017/SFX/*".postln;
 var dirPath = "~/Music/*";
+
+var gainSpec = ControlSpec(0.ampdb, 1.ampdb, \db, step: 0.5, default: -10, units: " dB");
+
 
 s.boot;
 QtGUI.palette = QPalette.dark; 
@@ -154,7 +157,7 @@ waitingView =({|i|
 //------------------------------------------------------
 // transportView
 //------------------------------------------------------
-transportView = ({
+transportView = ({|samplerNode, buffer|
 
 	var fontSize = 9;
 	var k,view;
@@ -175,6 +178,48 @@ transportView = ({
 			});
 
 	};
+
+	var sloopButtonAction = { |button|
+		buttonAction.(button);
+		switch(button.value,
+			0,{
+			
+			},
+			1,{		
+
+			});
+	};
+
+	var loopButtonAction = { |button|
+		buttonAction.(button);
+		switch(button.value,
+			1,{"playing...".postln;
+
+			buffer.numChannels.switch(
+				1,{s.sendMsg("/s_new", "bufplayerMonoFS", samplerNode, 0, 0,\bufnum, buffer.bufnum);},
+				2,{s.sendMsg("/s_new", "bufplayerStereoFS", samplerNode, 0, 0,\bufnum, buffer.bufnum);}
+			);
+			
+			s.sendMsg("/n_set",samplerNode,\volume,gainSpec.unmap(gainSpec.default));
+			},
+			0,{"stopped".postln;
+			//s.sendMsg("/n_free", samplerNode);
+			s.sendMsg("/n_set",samplerNode,\gate,0);
+		});
+	};
+
+
+	var oneShotButtonAction = { |button|
+		buttonAction.(button);
+		switch(button.value,
+			0,{
+			
+			},
+			1,{		
+				
+			});
+	};
+
 	view = View().layout_(HLayout(
 
 				 Button()
@@ -183,7 +228,7 @@ transportView = ({
 						["SLoop Out",Color.black,Color.green.alpha_(0.3)]
 
 						])
-					.action_(buttonAction)
+					.action_(sloopButtonAction)
 					.minHeight_(30)
 					.maxWidth_(50)
 					.font_(Font(size:fontSize)),
@@ -193,7 +238,7 @@ transportView = ({
 						["Loop Out",Color.black,Color.green.alpha_(0.3)]
 
 						])
-					.action_(buttonAction)
+					.action_(loopButtonAction)
 					.minHeight_(30)
 					.maxWidth_(50)
 					.font_(Font(size:fontSize)),
@@ -204,7 +249,7 @@ transportView = ({
 						["1Shot Out",Color.black,Color.green.alpha_(0.3)]
 
 						])
-					.action_(buttonAction)
+					.action_(oneShotButtonAction)
 					.minHeight_(30)
 					.maxWidth_(50)
 					.font_(Font(size:fontSize)),
@@ -244,32 +289,32 @@ playView =({|i,sndResult|
 
 	};
 
-	var buttonAction = {|button|
+	// var buttonAction = {|button|
 
-		button.value.switch(
+	// 	button.value.switch(
 
-			1,{"playing...".postln;
+	// 		1,{"playing...".postln;
 
-			buffer.numChannels.switch(
-			1,{s.sendMsg("/s_new", "bufplayerMonoFS", samplerNode, 0, 0,\bufnum, buffer.bufnum);},
-			2,{s.sendMsg("/s_new", "bufplayerStereoFS", samplerNode, 0, 0,\bufnum, buffer.bufnum);});
-			s.sendMsg("/n_set",samplerNode,\volume,sliderView.value);
+	// 		buffer.numChannels.switch(
+	// 		1,{s.sendMsg("/s_new", "bufplayerMonoFS", samplerNode, 0, 0,\bufnum, buffer.bufnum);},
+	// 		2,{s.sendMsg("/s_new", "bufplayerStereoFS", samplerNode, 0, 0,\bufnum, buffer.bufnum);});
+	// 		s.sendMsg("/n_set",samplerNode,\volume,sliderView.value);
 
-			},
-			0,{"stopped".postln;
-			//s.sendMsg("/n_free", samplerNode);
-			s.sendMsg("/n_set",samplerNode,\gate,0);
-		});
+	// 		},
+	// 		0,{"stopped".postln;
+	// 		//s.sendMsg("/n_free", samplerNode);
+	// 		s.sendMsg("/n_set",samplerNode,\gate,0);
+	// 	});
 
-	};
+	// };
 
-	var loopAction = {|button|
-		//•TODO 
-	};
+	// var loopAction = {|button|
+	// 	//•TODO 
+	// };
 
 
-	var sliderAction = {|slider|
-		s.sendMsg("/n_set",samplerNode,\volume,slider.value);
+	var sliderAction = {|o|
+		s.sendMsg("/n_set",samplerNode,\volume,gainSpec.map(o.value));
 
 	};
 
@@ -325,7 +370,7 @@ playView =({|i,sndResult|
 					.string_(sndResult.basename.splitext[0])
 					.align_(\left)
 					.font_(Font(size:12)),
-				transportView.(),
+				transportView.(samplerNode,buffer),
 
 				
 				StaticText().string_("volume").font_(Font(size:9)),
@@ -333,8 +378,8 @@ playView =({|i,sndResult|
 				sliderView = Slider()
 					.orientation_(\horizontal)
 					.maxHeight_(20)
-					.value_(0.5)
-					.action_({|a|sliderAction.(a)});
+					.action_({|a|sliderAction.(a)})
+					.valueAction_(gainSpec.unmap(gainSpec.default));
 
 
 
@@ -561,4 +606,5 @@ CmdPeriod.doOnce({window.close});
 
 
 )
+
 
