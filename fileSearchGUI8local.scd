@@ -35,18 +35,20 @@
 // 	Out.ar(0, son);
 // }).load(s);
 
-
-
 // SynthDef("oneShotSynthMono", { |bufnum = 0, gain = 0.0, gate = 0, attack=2.8, decay=2.8, pitch = 1|
 // 	var son;
 
-// 	son = PlayBuf.ar(1, bufnum, BufRateScale.kr(bufnum)*pitch*gate, trigger:gate, loop:1, doneAction:0) * gain.dbamp;
+// 	son = PlayBuf.ar(1, bufnum, BufRateScale.kr(bufnum)*pitch*gate, trigger:gate, loop:0, doneAction:2) 
+// 		//* EnvGen.kr(Env.linen(attack, (BufDur.kr(bufnum) * pitch.reciprocal) - attack - decay, decay), gate, doneAction:0) 
+// 		* gain.dbamp;
 // 	Out.ar(0, son!2);
 // }).load(s);
 
 // SynthDef("oneShotSynthStereo", { |bufnum = 0, gain = 0.0, gate = 0, attack=2.8, decay=2.8, pitch = 1|
 // 	var son;
-// 	son = PlayBuf.ar(2, bufnum, BufRateScale.kr(bufnum)*pitch*gate, trigger:gate, loop:1, doneAction:0) * gain.dbamp;
+// 	son = PlayBuf.ar(2, bufnum, BufRateScale.kr(bufnum)*pitch*gate, trigger:gate, loop:0, doneAction:2) 
+// 		//* EnvGen.kr(Env.linen(attack, (BufDur.kr(bufnum) * pitch.reciprocal) - attack - decay, decay), gate, doneAction:0) 
+// 		* gain.dbamp;
 // 	Out.ar(0, son);
 // }).load(s);
 
@@ -179,7 +181,7 @@ playView =({|i,sndResult|
 	var group = Group.new, loopSynth, oneShotSynth;
 	var transportView;
 	var fontSize = 9;
-	var oneShotButton;
+	var oneShotButton, pitchSlider, volumeSlider, fadeInKnob, fadeOutKnob;
 
 	var cancelButtonAction = {|button|
 		loopSynth.free;
@@ -222,51 +224,56 @@ playView =({|i,sndResult|
 			});
 	};
 
+	var makeSynth = {|localBuffer, synthTypeMono, synthTypeStereo|
+
+		var localSynth;
+		localBuffer.numChannels.switch(
+			1,{
+				localSynth = Synth.head(group, synthTypeMono, [\bufnum, localBuffer.bufnum, \gate, 1]);
+			},
+			2,{
+				localSynth = Synth.head(group, synthTypeStereo, [\bufnum, localBuffer.bufnum, \gate, 1]);
+			}
+		);
+
+		group.set(\gain,gainSpec.map(volumeSlider.value));
+		group.set(\attack,fadeInSpec.map(fadeInKnob.value));
+		group.set(\decay,fadeOutSpec.map(fadeOutKnob.value));
+		group.set(\pitch,pitchSpec.map(pitchSlider.value));
+
+		localSynth		
+	};
+
 	var loopButtonAction = { |button|
 		buttonAction.(button);
 		switch(button.value,
 			1,{
-				"playing...".postln;
-				loopSynth.set(\gate,1);
+				"play loop...".postln;
+				loopSynth = makeSynth.(buffer,\loopSynthMono,\loopSynthStereo);
 			},
 			0,{
-				"stopped".postln;
+				"stop loop".postln;
 				loopSynth.set(\gate,0);
 			}
 		);
 	};
 
 
-
 	var oneShotButtonAction = { |button|
 		buttonAction.(button);
 		switch(button.value,
-			1,{
-				var dur	= (buffer.numFrames / buffer.sampleRate);
-				dur.postln;
-				oneShotSynth.set(\gate,1);
+			1,{"play oneshot...".postln;
 
-
-				{ button.valueAction = 0}.defer(dur);
-
-
-				// "oneshot...".postln;
-				// buffer.numChannels.switch(
-				// 	1,{
-				// 		oneShotSynth = Synth.head(group, \oneShotSynthMono, [\bufnum, buffer.bufnum, \gate, 1]);
-				// 	},
-				// 	2,{
-				// 		oneShotSynth = Synth.head(group, \oneShotSynthStereo, [\bufnum, buffer.bufnum, \gate, 1]);
-
-				// 	}
-				// );
-				// button.value = 0;
-			
+				oneShotSynth = makeSynth.(buffer,\oneShotSynthMono,\oneShotSynthStereo);
+				OSCpathResponder(s.addr, ['/n_end', oneShotSynth.nodeID], { |time, resp, msg| 
+				        resp.remove;
+				        {button.valueAction = 0;}.defer;
+				}).add; 
 			},
-			0,{	
+			0,{	"stop oneshot".postln;
 				oneShotSynth.set(\gate,0);
-	
-			});
+			}
+		);
 	};
 
 	var oneShotEnd = {
@@ -275,40 +282,6 @@ playView =({|i,sndResult|
 
 	var onBufferRead = {|localBuf|
 		localBuf.loadToFloatArray(action:{ |data|
-
-			localBuf.numChannels.switch(
-				1,{
-					loopSynth = Synth.head(group, \loopSynthMono, [\bufnum, localBuf.bufnum, \gate, 0]);
-					oneShotSynth = Synth.head(group, \oneShotSynthMono, [\bufnum, localBuf.bufnum, \gate, 0]);
-				},
-				2,{
-					loopSynth = Synth.head(group, \loopSynthStereo, [\bufnum, localBuf.bufnum, \gate, 0]);
-					oneShotSynth = Synth.head(group, \oneShotSynthStereo, [\bufnum, localBuf.bufnum, \gate, 0]);
-
-				}
-			);
-			// s.queryAllNodes;
-
-			// OSCpathResponder(s.addr, ['/n_end', oneShotSynth.nodeID], { |time, resp, msg| 
-			// 	msg.postln;
-			//     //resp.remove; 
-			// 	{oneShotButton.valueAction = 0;}.defer;
-			//     // reload the oneShot synth ready to play
-			// 	localBuf.numChannels.switch(
-			// 		1,{
-			// 			oneShotSynth = Synth.head(group, \oneShotSynthMono, [\bufnum, localBuf.bufnum, \gate, 0]);
-			// 		},
-			// 		2,{
-			// 			oneShotSynth = Synth.head(group, \oneShotSynthStereo, [\bufnum, localBuf.bufnum, \gate, 0]);
-			// 		}
-			// 	);
-			// }).add; 
-
-			group.set(\gain,gainSpec.unmap(gainSpec.default));
-			group.set(\attack,fadeInSpec.unmap(fadeInSpec.default));
-			group.set(\decay,fadeOutSpec.unmap(fadeOutSpec.default));
-			group.set(\decay,pitchSpec.unmap(pitchSpec.default));
-
 			{
 				sfv.setData(data,
 					512,// QT not using this
@@ -317,16 +290,8 @@ playView =({|i,sndResult|
 					localBuf.sampleRate.asInteger // need to cast!?!
 				);
 				view.enabled_(true);
-			
 			}.defer;
-
-
 		});
-
-
-		// OSCpathResponder(s.addr, ['/n_end', samplerNode], { |time, resp, msg| 
-		//         resp.remove; 
-		// }).add; 
 	};
 
 	// //• encapsulate as a service (either freesound or a HD)
@@ -414,7 +379,7 @@ playView =({|i,sndResult|
 
 
 				StaticText().string_("fadeIn").font_(Font(size:9)),
-				Knob()
+				fadeInKnob =  Knob()
 					.minHeight_(30)
 					.maxWidth_(30)
 					.action_({|o|
@@ -424,7 +389,7 @@ playView =({|i,sndResult|
 					.valueAction_(fadeInSpec.unmap(fadeInSpec.default)),
 
 				StaticText().string_("fadeOut").font_(Font(size:9)),
-				k = Knob()
+				fadeOutKnob = Knob()
 
 					.minHeight_(30)
 					.maxWidth_(30)
@@ -437,7 +402,7 @@ playView =({|i,sndResult|
 				GridLayout.rows([
 
 					StaticText().string_("volume").font_(Font(size:9)),
-					Slider()
+					volumeSlider =  Slider()
 						.orientation_(\horizontal)
 						.maxHeight_(20)
 						.action_({|o|
@@ -447,7 +412,7 @@ playView =({|i,sndResult|
 				],[
 
 					StaticText().string_("pitch").font_(Font(size:9)),
-					Slider()
+					pitchSlider =  Slider()
 						.orientation_(\horizontal)
 						.maxHeight_(20)
 						.action_({|o|
