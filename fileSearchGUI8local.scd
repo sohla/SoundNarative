@@ -21,22 +21,33 @@
 //
 
 // (
-// SynthDef("bufplayerMonoFS", { |bufnum = 0, gain = 0.0, gate = 1, attack=2.8, decay=2.8, pitch = 1|
+// SynthDef("loopSynthMono", { |bufnum = 0, gain = 0.0, gate = 0, attack=2.8, decay=2.8, pitch = 1|
 // 	var son;
-
-// 	son = PlayBuf.ar(1,bufnum,BufRateScale.kr(bufnum)*pitch,trigger:gate,loop:1,doneAction:0)
-// 	* EnvGen.kr(Env.asr(attack,1.0,decay,\sine),gate,doneAction:0) * gain.dbamp;
-
+// 	son = PlayBuf.ar(1,bufnum,BufRateScale.kr(bufnum)*pitch, trigger:gate, loop:1, doneAction:0)
+// 		* EnvGen.kr(Env.asr(attack,1.0,decay,\sine), gate, doneAction:0) * gain.dbamp;
 // 	Out.ar(0, son!2);
-// 	//	Out.ar(0, son!2);
 // }).load(s);
 
-// SynthDef("bufplayerStereoFS", { |bufnum = 0, gain = 0.0, gate = 1, attack=2.8, decay=2.8, pitch = 1|
+// SynthDef("loopSynthStereo", { |bufnum = 0, gain = 0.0, gate = 0, attack=2.8, decay=2.8, pitch = 1|
 // 	var son;
-// 	son = PlayBuf.ar(2,bufnum,BufRateScale.kr(bufnum)*pitch,trigger:gate,loop:1,doneAction:0)
-// 	* EnvGen.kr(Env.asr(attack,1.0,decay,\sine),gate,doneAction:0) * gain.dbamp;
+// 	son = PlayBuf.ar(2,bufnum,BufRateScale.kr(bufnum)*pitch, trigger:gate, loop:1, doneAction:0)
+// 		* EnvGen.kr(Env.asr(attack,1.0,decay,\sine), gate, doneAction:0) * gain.dbamp;
 // 	Out.ar(0, son);
-// 	//	Out.ar(0, son);
+// }).load(s);
+
+
+
+// SynthDef("oneShotSynthMono", { |bufnum = 0, gain = 0.0, gate = 0, attack=2.8, decay=2.8, pitch = 1|
+// 	var son;
+
+// 	son = PlayBuf.ar(1, bufnum, BufRateScale.kr(bufnum)*pitch*gate, trigger:gate, loop:1, doneAction:0) * gain.dbamp;
+// 	Out.ar(0, son!2);
+// }).load(s);
+
+// SynthDef("oneShotSynthStereo", { |bufnum = 0, gain = 0.0, gate = 0, attack=2.8, decay=2.8, pitch = 1|
+// 	var son;
+// 	son = PlayBuf.ar(2, bufnum, BufRateScale.kr(bufnum)*pitch*gate, trigger:gate, loop:1, doneAction:0) * gain.dbamp;
+// 	Out.ar(0, son);
 // }).load(s);
 
 // )
@@ -54,8 +65,8 @@ var dir = PathName.new("~/Music/SoundNarative/");
 var fastSearch;
 
 //var dirPath = "/Volumes/Steph2015/*".postln;
-var dirPath = "/Volumes/Steph2017/SFX/*".postln;
-//var dirPath = "~/Music/*";
+//var dirPath = "/Volumes/Steph2017/SFX/*".postln;
+var dirPath = "~/Music/*";
 
 var gainSpec = ControlSpec(0.ampdb, 12, \db, step: 0.5, default: 0.0, units: " db");
 var fadeInSpec = ControlSpec(0.001, 5.0, \lin, step: 0.1, default: 1.8, units: " secs");
@@ -165,9 +176,10 @@ waitingView =({|i|
 playView =({|i,sndResult|
 
 	var buffer,sfv,view;
-	var group = Group.new,loopSynth;
+	var group = Group.new, loopSynth, oneShotSynth;
 	var transportView;
 	var fontSize = 9;
+	var oneShotButton;
 
 	var cancelButtonAction = {|button|
 		loopSynth.free;
@@ -229,24 +241,73 @@ playView =({|i,sndResult|
 	var oneShotButtonAction = { |button|
 		buttonAction.(button);
 		switch(button.value,
-			0,{
+			1,{
+				var dur	= (buffer.numFrames / buffer.sampleRate);
+				dur.postln;
+				oneShotSynth.set(\gate,1);
+
+
+				{ button.valueAction = 0}.defer(dur);
+
+
+				// "oneshot...".postln;
+				// buffer.numChannels.switch(
+				// 	1,{
+				// 		oneShotSynth = Synth.head(group, \oneShotSynthMono, [\bufnum, buffer.bufnum, \gate, 1]);
+				// 	},
+				// 	2,{
+				// 		oneShotSynth = Synth.head(group, \oneShotSynthStereo, [\bufnum, buffer.bufnum, \gate, 1]);
+
+				// 	}
+				// );
+				// button.value = 0;
 			
 			},
-			1,{		
-				
+			0,{	
+				oneShotSynth.set(\gate,0);
+	
 			});
 	};
+
+	var oneShotEnd = {
+
+	};
+
 	var onBufferRead = {|localBuf|
 		localBuf.loadToFloatArray(action:{ |data|
 
 			localBuf.numChannels.switch(
-				1,{loopSynth = Synth.head(group, \bufplayerMonoFS, [\bufnum, localBuf.bufnum, \gate, 0]);},
-				2,{loopSynth = Synth.head(group, \bufplayerStereoFS, [\bufnum, localBuf.bufnum, \gate, 0]);}
-			);
+				1,{
+					loopSynth = Synth.head(group, \loopSynthMono, [\bufnum, localBuf.bufnum, \gate, 0]);
+					oneShotSynth = Synth.head(group, \oneShotSynthMono, [\bufnum, localBuf.bufnum, \gate, 0]);
+				},
+				2,{
+					loopSynth = Synth.head(group, \loopSynthStereo, [\bufnum, localBuf.bufnum, \gate, 0]);
+					oneShotSynth = Synth.head(group, \oneShotSynthStereo, [\bufnum, localBuf.bufnum, \gate, 0]);
 
-			loopSynth.set(\gain,gainSpec.unmap(gainSpec.default));
-			loopSynth.set(\attack,fadeInSpec.unmap(fadeInSpec.default));
-			loopSynth.set(\decay,fadeOutSpec.unmap(fadeOutSpec.default));
+				}
+			);
+			// s.queryAllNodes;
+
+			// OSCpathResponder(s.addr, ['/n_end', oneShotSynth.nodeID], { |time, resp, msg| 
+			// 	msg.postln;
+			//     //resp.remove; 
+			// 	{oneShotButton.valueAction = 0;}.defer;
+			//     // reload the oneShot synth ready to play
+			// 	localBuf.numChannels.switch(
+			// 		1,{
+			// 			oneShotSynth = Synth.head(group, \oneShotSynthMono, [\bufnum, localBuf.bufnum, \gate, 0]);
+			// 		},
+			// 		2,{
+			// 			oneShotSynth = Synth.head(group, \oneShotSynthStereo, [\bufnum, localBuf.bufnum, \gate, 0]);
+			// 		}
+			// 	);
+			// }).add; 
+
+			group.set(\gain,gainSpec.unmap(gainSpec.default));
+			group.set(\attack,fadeInSpec.unmap(fadeInSpec.default));
+			group.set(\decay,fadeOutSpec.unmap(fadeOutSpec.default));
+			group.set(\decay,pitchSpec.unmap(pitchSpec.default));
 
 			{
 				sfv.setData(data,
@@ -335,7 +396,7 @@ playView =({|i,sndResult|
 								.maxWidth_(50)
 								.font_(Font(size:fontSize)),
 
-							 Button()
+							 oneShotButton = Button()
 								.states_([
 									["1Shot In"],
 									["1Shot Out",Color.black,Color.green.alpha_(0.3)]
@@ -358,7 +419,7 @@ playView =({|i,sndResult|
 					.maxWidth_(30)
 					.action_({|o|
 
-						loopSynth.set(\attack,fadeInSpec.map(o.value));
+						group.set(\attack,fadeInSpec.map(o.value));
 					})
 					.valueAction_(fadeInSpec.unmap(fadeInSpec.default)),
 
@@ -368,7 +429,7 @@ playView =({|i,sndResult|
 					.minHeight_(30)
 					.maxWidth_(30)
 					.action_({|o|
-						loopSynth.set(\decay,fadeOutSpec.map(o.value));
+						group.set(\decay,fadeOutSpec.map(o.value));
 					})
 					.valueAction_(fadeOutSpec.unmap(fadeOutSpec.default)),
 				
@@ -380,7 +441,7 @@ playView =({|i,sndResult|
 						.orientation_(\horizontal)
 						.maxHeight_(20)
 						.action_({|o|
-							loopSynth.set(\gain,gainSpec.map(o.value));
+							group.set(\gain,gainSpec.map(o.value));
 						})
 						.valueAction_(gainSpec.unmap(gainSpec.default))
 				],[
@@ -390,7 +451,7 @@ playView =({|i,sndResult|
 						.orientation_(\horizontal)
 						.maxHeight_(20)
 						.action_({|o|
-							loopSynth.set(\pitch,pitchSpec.map(o.value));
+							group.set(\pitch,pitchSpec.map(o.value));
 						})
 						.valueAction_(pitchSpec.unmap(pitchSpec.default))
 				]);
