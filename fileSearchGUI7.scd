@@ -379,14 +379,17 @@ queryView =({|i|
 
 		//freesound basic text search
 
-		Freesound.defaultFields =
-			"id,name,tags,username,license,previews,channels,images,type,download,duration";
+		// Freesound.defaultFields =
+		// 	"id,name,tags,username,license,previews,channels,images,type,download,duration";
 
 		FSSound.textSearch(
 			query: a.string,
 			filter: "duration:[0 TO 30]",
-			params:('page':1),
+			// params:('page':1),
+			//params:('fields':["id,name,tags,username,license,previews,channels,images,type,download,duration"]),
 			action: {|p|
+
+				{
 				var count = 0;
 				searchViews[i].layout.index = stackIndexes.find([\resultsIdx]);
 				p.do({|snd|
@@ -396,7 +399,7 @@ queryView =({|i|
 						count = count + 1;
 					}.play(AppClock);
 
-				});
+				});}.defer;
 			}
 		);
 	};
