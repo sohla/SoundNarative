@@ -1,3 +1,4 @@
+	// //call this for each session
 	// (
 	// Freesound.clientId = "f2880da706c6d92d7ce3";
 	// Freesound.clientSecret = "bfa791a021762f7c6cb70088c720855a0c5f8f49";
@@ -5,21 +6,11 @@
 	// Freesound.refreshToken;
 	// )
 
-	//Quarks.gui
-	// o = Server.local.options;
-	// o.outDevice
-	// 
-	//
-	// // Post the number of output channels
-	//
-	// o.numOutputBusChannels.postln;
-	//
-	// // Set them to a new number
-	//
-	// o.numOutputBusChannels = 10; // The next time it boots, this w
-	//
-	//
+// play buffer by using a bufrd and phasor
+//{ BufRd.ar(1, b, Phasor.ar(0, BufRateScale.kr(b), 0, BufFrames.kr(b))) }.play;
 
+
+	//// load those synths
 	// (
 	// SynthDef("loopSynthMono", { |bufnum = 0, gain = 0.0, gate = 0, attack=2.8, decay=2.8, pitch = 1|
 	// 	var son;
@@ -84,8 +75,6 @@
 
 		// start building find command string
 		var cs = ("find % \\(").format(dir);
-
-	//	var cs = ("find % -iname \"*%*\" -a \\(").format(dir,searchString);
 		var data = 0;
 
 
@@ -196,8 +185,6 @@
 
 		};
 
-
-
 		var buttonAction = {|button|
 			switch(button.value,
 				0,{
@@ -268,6 +255,7 @@
 				1,{"play oneshot...".postln;
 
 					oneShotSynth = makeSynth.(buffer,\oneShotSynthMono,\oneShotSynthStereo);
+					//• replace OSCpathResponder
 					OSCpathResponder(s.addr, ['/n_end', oneShotSynth.nodeID], { |time, resp, msg| 
 					        resp.remove;
 					        {button.valueAction = 0;}.defer;
@@ -297,26 +285,6 @@
 			});
 		};
 
-		// //• encapsulate as a service (either freesound or a HD)
-
-		//• sndResult could be a path to local path or URL to freesound
-		//• if it's freesound, need to download, process mp3->local
-		//• local->buffer...let's go!
-
-		////•••••BASENAME -> NAME
-
-		//["->",sndResult.name.splitext[1].toLower].postln;
-
-		// if(sndResult.name.splitext[1].toLower == "mp3",{
-		// 	buffer = MP3.readToBuffer(s, sndResult,action:onBufferRead);
-		// },{
-		// 	buffer = Buffer.read(s, sndResult,action:onBufferRead);
-		// });
-
-
-
-
-
 		view = View().layout_(
 		GridLayout.rows(
 				[
@@ -331,8 +299,6 @@
 						.string_(sndResult.name.splitext[0])
 						.align_(\left)
 						.font_(Font(size:12)),
-
-
 
 					transportView = View().layout_(HLayout(
 
@@ -370,9 +336,6 @@
 
 
 						)),
-
-
-
 
 					StaticText().string_("fadeIn").font_(Font(size:9)),
 					fadeInKnob =  Knob()
@@ -417,8 +380,6 @@
 							.valueAction_(pitchSpec.unmap(pitchSpec.default))
 					]);
 
-
-
 				],[
 					[sfv = SoundFileView()
 						.maxHeight_(80)
@@ -426,11 +387,11 @@
 						.backColor_(Color.white.alpha_(0.7))
 						.rmsColor_(Color.blue.alpha_(0.4))
 						.peakColor_(Color.blue.alpha_(0.3))
+						.timeCursorOn_(true)
+						.timeCursorColor_(Color.white)
+						.timeCursorPosition_(2050);
 						//.selectionColor_(0, Color.black.alpha_(0.2))
-
 						,columns:11],
-
-
 
 			]
 		).setMinColumnWidth(1,150)
@@ -438,7 +399,8 @@
 		.background_(Color.rand(0.1,0.9))
 		.maxHeight_(160);
 
-				// //• freesound load sound into mp3 buffer
+		// need to fetch sound after the ui has been built
+		// freesound load sound into mp3 buffer
 		sndResult.retrievePreview(dir.asAbsolutePath,{|a|
 			["getting preview : ",sndResult.name.splitext[0]].postln;
 			p = dir +/+ PathName(sndResult.name.splitext[0]++".mp3");
@@ -458,31 +420,6 @@
 
 			searchViews[i].layout.index = stackIndexes.find([\waitingIdx]);
 
-			//• HD version
-			//• time to start making a protocol
-			//•
-			//• either search should return data including path, channels, length, shape?
-			//• soundInfo structure should be passed on to results view
-			//searchViews[i].layout.index = stackIndexes.find([\resultsIdx]);
-
-			// searchViews[i].layout.index = stackIndexes.find([\resultsIdx]);
-			// fastSearch.(
-			// 	dirPath,
-			// 	"wav|wave|aif|aiff|mp3",
-			// 	a.string,// using '.' will give every file
-			// 	{|a,count|
-			
-			// 		//[i,a].postln;
-			// 		//Routine{
-			// 		addResult.(i,a,count);
-			// 		//}.play(AppClock);
-			
-			// 	},
-			// 	{|c|("sound files found"+c).postln;
-			// 	}
-			// );
-
-			//• encapsulate as a service (either freesound or a HD)
 
 			//freesound basic text search
 
@@ -494,20 +431,20 @@
 				filter: "duration:[0 TO 30]",
 				params:('page':1),
 				//params:('fields':["id,name,tags,username,license,previews,channels,images,type,download,duration"]),
+				// does the above work ?
 				action: {|p|
 					{
-					var count = 0;
-					searchViews[i].layout.index = stackIndexes.find([\resultsIdx]);
-					p.do({|snd|
+						var count = 0;
+						searchViews[i].layout.index = stackIndexes.find([\resultsIdx]);
+						p.do({|snd|
+							Routine{
+								//snd.postln;
+								addResult.(i,snd,count);
+								count = count + 1;
+							}.play(AppClock);
 
-						Routine{
-							snd.postln;
-							// "3".postln;
-							addResult.(i,snd,count);
-							count = count + 1;
-						}.play(AppClock);
-
-					});}.defer;
+						});
+					}.defer;
 				}
 			);
 		};
@@ -577,9 +514,7 @@
 					StaticText()
 						.background_(Color.green(0.7,0.2))
 						.stringColor_(Color.white)
-							
-
-						.string_(" " + (count+1) + "\t🔊" + sndResult.name.splitext[0])
+							.string_(" " + (count+1) + "\t🔊" + sndResult.name.splitext[0])
 						.align_(\left)
 						.font_(Font(size:fontSize))
 						.mouseDownAction_(buttonAction),
@@ -592,17 +527,13 @@
 						.maxWidth_(160)
 						.mouseDownAction_(buttonAction)
 						.onResize_({|btn|
-							// SoundFile.use(sndResult, { |f| 
-							// 	var dur = f.duration;
-							// 	btn.string_( 
-							// 		"🕓" + (dur/60).floor + "\'" + (dur%60).floor++ "\"" + ((dur%60).mod(1).round(1e-3)*1000) ++"",
-							// 		Color.white,
-							// 		Color.green(0.7,0.2)
-							// 	);
-
-							// })
+							var dur = sndResult.duration.asFloat;
+							btn.string_( 
+								"🕓" + (dur/60).floor + "\'" + (dur%60).floor++ "\"" + ((dur%60).mod(1).round(1e-3)*1000) ++"",
+								Color.white,
+								Color.green(0.7,0.2)
+							);
 						})
-
 				)
 		    );
 			view.layout.margins = [0,0,0,0];
@@ -623,8 +554,6 @@
 				queryView.(i),
 				waitingView.(i),
 				resultsView.(i),
-				//playView.(i)
-
 			)
 		);
 	});
@@ -642,8 +571,6 @@
 	addStack.(0);
 
 
-
-
 	window.onClose = ({
 
 		Buffer.freeAll;
@@ -651,7 +578,6 @@
 
 	});
 	CmdPeriod.doOnce({window.close});
-
 
 
 	)
