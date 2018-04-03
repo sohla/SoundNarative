@@ -25,22 +25,22 @@
 // 	var son;
 // 	son = PlayBuf.ar(1,bufnum,BufRateScale.kr(bufnum),loop:1,doneAction:2)
 // 	* EnvGen.kr(Env.asr(2.8,1.0,2.8,\sine),gate,doneAction:2) * volume;
-//
+
 // 	Out.ar(0, son!2);
 // 	//	Out.ar(0, son!2);
 // }).load(s);
-//
+
 // SynthDef("bufplayerStereoFS", { |bufnum = 0, volume = 0.0, gate = 1|
 // 	var son;
 // 	son = PlayBuf.ar(2,bufnum,BufRateScale.kr(bufnum),loop:1,doneAction:2)
 // 	* EnvGen.kr(Env.asr(2.8,1.0,2.8,\sine),gate,doneAction:2) * volume;
-//
+
 // 	Out.ar(0, son);
 // 	//	Out.ar(0, son);
 // }).load(s);
-//
+
 // )
-//
+
 
 
 
