@@ -378,7 +378,7 @@ queryView =({|i|
 		//• encapsulate as a service (either freesound or a HD)
 
 		//freesound basic text search
-
+		
 		// Freesound.defaultFields =
 		// 	"id,name,tags,username,license,previews,channels,images,type,download,duration";
 
