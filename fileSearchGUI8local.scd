@@ -599,8 +599,6 @@ window.layout = VLayout();
 addStack.(0);
 
 
-
-
 window.onClose = ({
 
 	Buffer.freeAll;
