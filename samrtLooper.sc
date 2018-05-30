@@ -16,9 +16,9 @@ z = Buffer.sendCollection(s, winenv.discretize, 1);
 SynthDef(\warp, {|buffer = 0, envbuf = -1, ratio = 1, ws = 0.1, ol = 1, rr = 0.0|
     var out, pointer, filelength, pitch, dur;
 
-	dur = BufDur.kr(buffer) * 0.4;
+	dur = BufDur.kr(buffer);
 
-    pointer = 0.2;
+    pointer = 0.0;
 
     pitch = 1;
 
@@ -31,8 +31,8 @@ SynthDef(\warp, {|buffer = 0, envbuf = -1, ratio = 1, ws = 0.1, ol = 1, rr = 0.0
 
 // use built-in env
 x = Synth(\warp, [\buffer, b, \envbuf, z])
-x.set(\ratio, 1);
-x.set(\ol, 2);
+x.set(\ratio, 0.25);
+x.set(\ol, 4);
 
 x.set(\ws, 1.5);
 x.set(\rr, 0);
@@ -44,3 +44,5 @@ x.set(\envbuf, z)
 x.set(\envbuf, -1);
 
 x.free;
+
+s.plotTree

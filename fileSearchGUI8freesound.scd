@@ -1,10 +1,10 @@
-	// //call this for each session
-	// (
-	// Freesound.clientId = "f2880da706c6d92d7ce3";
-	// Freesound.clientSecret = "bfa791a021762f7c6cb70088c720855a0c5f8f49";
-	// Freesound.authType = "oauth2";
-	// Freesound.refreshToken;
-	// )
+	//call this for each session
+	(
+	Freesound.clientId = "f2880da706c6d92d7ce3";
+	Freesound.clientSecret = "bfa791a021762f7c6cb70088c720855a0c5f8f49";
+	Freesound.authType = "oauth2";
+	Freesound.refreshToken;
+	)
 
 // play buffer by using a bufrd and phasor
 //{ BufRd.ar(1, b, Phasor.ar(0, BufRateScale.kr(b), 0, BufFrames.kr(b))) }.play;
