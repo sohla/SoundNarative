@@ -31,8 +31,8 @@ SynthDef(\warp, {|buffer = 0, envbuf = -1, ratio = 1, ws = 0.1, ol = 1, rr = 0.0
 
 // use built-in env
 x = Synth(\warp, [\buffer, b, \envbuf, z])
-x.set(\ratio, 0.25);
-x.set(\ol, 4);
+x.set(\ratio, 0.5);
+x.set(\ol, 1);
 
 x.set(\ws, 1.5);
 x.set(\rr, 0);

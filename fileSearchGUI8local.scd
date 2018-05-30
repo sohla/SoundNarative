@@ -235,7 +235,8 @@ playView =({|i,sndResult|
 				}).add; 
 			},
 			0,{	"stop oneshot".postln;
-				oneShotSynth.set(\gate,0);
+				//oneShotSynth.set(\gate,0);
+				oneShotSynth.free;
 			}
 		);
 	};
@@ -615,14 +616,14 @@ CmdPeriod.doOnce({window.close});
 SynthDef("loopSynthMono", { |bufnum = 0, gain = 0.0, gate = 0, attack=2.8, decay=2.8, pitch = 1|
 	var son;
 	son = PlayBuf.ar(1,bufnum,BufRateScale.kr(bufnum)*pitch, trigger:gate, loop:1, doneAction:0)
-		* EnvGen.kr(Env.asr(attack,1.0,decay,\sine), gate, doneAction:0) * gain.dbamp;
+		* EnvGen.kr(Env.asr(attack,1.0,decay,\sine), gate, doneAction:2) * gain.dbamp;
 	Out.ar(0, son!2);
 }).load(s);
 
 SynthDef("loopSynthStereo", { |bufnum = 0, gain = 0.0, gate = 0, attack=2.8, decay=2.8, pitch = 1|
 	var son;
 	son = PlayBuf.ar(2,bufnum,BufRateScale.kr(bufnum)*pitch, trigger:gate, loop:1, doneAction:0)
-		* EnvGen.kr(Env.asr(attack,1.0,decay,\sine), gate, doneAction:0) * gain.dbamp;
+		* EnvGen.kr(Env.asr(attack,1.0,decay,\sine), gate, doneAction:2) * gain.dbamp;
 	Out.ar(0, son);
 }).load(s);
 
