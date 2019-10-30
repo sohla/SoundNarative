@@ -28,8 +28,8 @@ var dir = PathName.new("~/Music/SoundNarative/");
 var fastSearch;
 
 //var dirPath = "/Volumes/Steph2015/*".postln;
-var dirPath = "/Volumes/Steph2017/SFX/*".postln;
-//var dirPath = "~/Music/*";
+//var dirPath = "/Volumes/Steph2017/SFX/*".postln;
+var dirPath = "~/Music/*";
 
 var gainSpec = ControlSpec(0.ampdb, 12, \db, step: 0.5, default: 0.0, units: " db");
 var fadeInSpec = ControlSpec(0.001, 5.0, \lin, step: 0.1, default: 1.8, units: " secs");
@@ -139,7 +139,7 @@ waitingView =({|i|
 playView =({|i,sndResult|
 
 	var buffer,sfv,view;
-	var group = Group.new, loopSynth, oneShotSynth;
+	var group = Group.tail(s), loopSynth, oneShotSynth;
 	var transportView;
 	var fontSize = 9;
 	var oneShotButton, pitchSlider, volumeSlider, fadeInKnob, fadeOutKnob;
@@ -193,10 +193,10 @@ playView =({|i,sndResult|
 		var localSynth;
 		localBuffer.numChannels.switch(
 			1,{
-				localSynth = Synth.head(group, synthTypeMono, [\bufnum, localBuffer.bufnum, \gate, 1]);
+				localSynth = Synth.tail(group, synthTypeMono, [\bufnum, localBuffer.bufnum, \gate, 1]);
 			},
 			2,{
-				localSynth = Synth.head(group, synthTypeStereo, [\bufnum, localBuffer.bufnum, \gate, 1]);
+				localSynth = Synth.tail(group, synthTypeStereo, [\bufnum, localBuffer.bufnum, \gate, 1]);
 			}
 		);
 
@@ -644,10 +644,5 @@ SynthDef("oneShotSynthStereo", { |bufnum = 0, gain = 0.0, gate = 0, attack=2.8, 
 
 
 )
-
-
-
-
-
 
 
