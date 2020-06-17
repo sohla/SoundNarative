@@ -13,7 +13,7 @@
 	//
 	//
 
-
+	
 
 
 
@@ -21,6 +21,7 @@
 	(
 
 	var window, mainView,newSearchView,stackView,queryView,resultsView,waitingView,playView;
+	var buildWindow;
 	var addStack,removeStack,addResult,switchToStack;
 	var searchViews = [];
 	var stackIndexes = [\newSearchIdx,\queryIdx,\waitingIdx,\resultsIdx,\playIdx];
@@ -29,10 +30,11 @@
 	var fastSearch;
 
 	//var dirPath = "/Volumes/Steph2015/*".postln;
-	var dirPath = "/Volumes/Steph2015/SFX/*".postln;
-	//var dirPath = "~/Music/*";
+	// var dirPath = "/Volumes/Steph2015/SFX/*".postln;
+	// var dirPath = "~/Music/*";
+	var dirPath = "~/Music/VoiceLab/SFX/*";
 
-	var gainSpec = ControlSpec(0.ampdb, 12, \db, step: 0.5, default: 0.0, units: " db");
+	var gainSpec = ControlSpec(0.ampdb, 12, \db, step: 0.5, default: -12.0, units: " db");
 	var fadeInSpec = ControlSpec(0.001, 5.0, \lin, step: 0.1, default: 1.8, units: " secs");
 	var fadeOutSpec = ControlSpec(0.001, 5.0, \lin, step: 0.1, default: 2.8, units: " secs");
 	var pitchSpec = ControlSpec(0.25, 4, \exp, step: 0.01, default: 1, units: " pitch");
@@ -600,30 +602,48 @@
 	//------------------------------------------------------
 	// build UI
 	//------------------------------------------------------
-	window = Window("Sound Narative",Rect(0,0,Window.screenBounds.width * 0.2, Window.screenBounds.height)
-		//.center_(Window.availableBounds.center)
-		).front;
 
-	window.layout = VLayout();
+	buildWindow = {
 
-	window.view.keyDownAction_({|view,char,mods,uni,code,key|
-		if(uni==27,{//escape
-			newButtonAction.();
+		window = Window("Sound Narative",Rect(0,0,Window.screenBounds.width * 0.2, Window.screenBounds.height)
+			//.center_(Window.availableBounds.center)
+			).front;
+
+		window.layout = VLayout();
+
+		window.view.keyDownAction_({|view,char,mods,uni,code,key|
+			if(uni==27,{//escape
+				newButtonAction.();
+			});
+			// uni.postln;
 		});
-		// uni.postln;
-	});
 
-	// add our first stack
-	addStack.(0);
-	newButtonAction.();
+		// add our first stack
+		addStack.(0);
+		newButtonAction.();
 
-	window.onClose = ({
+		window.onClose = ({
 
-		Buffer.freeAll;
-		s.freeAll;
+			Buffer.freeAll;
+			s.freeAll;
 
-	});
-	CmdPeriod.doOnce({window.close});
+		});
+		CmdPeriod.doOnce({window.close});    
+	};
+
+
+	// buildWindow.();
+
+	FileDialog({ |paths|
+		dirPath = paths[0];
+		buildWindow.();
+	}, {
+		buildWindow.();
+    }, fileMode: 2);
+
+
+
+
 
 	//------------------------------------------------------------------
 	// SYNTHS

@@ -142,5 +142,11 @@ e.postln;
 e.size;
 )
 
-
-
+// By default, the selected paths are passed to okFunc as an array.
+(
+FileDialog({ |paths|
+    postln("Selected path:" + paths[0]);
+    }, {
+    postln("Dialog was cancelled. Try again.");
+    }, fileMode: 2);
+)
