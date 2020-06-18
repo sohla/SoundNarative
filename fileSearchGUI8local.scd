@@ -13,7 +13,7 @@
 	//
 	//
 
-	
+
 
 
 
@@ -27,12 +27,12 @@
 	var stackIndexes = [\newSearchIdx,\queryIdx,\waitingIdx,\resultsIdx,\playIdx];
 	var newButtonAction;
 	//var dir = PathName.new("~/Music/SoundNarative/");
-	var fastSearch;
+	var fastSearch, fastFilterSearch;
 
 	//var dirPath = "/Volumes/Steph2015/*".postln;
-	// var dirPath = "/Volumes/Steph2015/SFX/*".postln;
+	var dirPath = "/Volumes/Steph2012/SFX/*".postln;
 	// var dirPath = "~/Music/*";
-	var dirPath = "~/Music/VoiceLab/SFX/*";
+	// var dirPath = "~/Music/VoiceLab/SFX/*";
 
 	var gainSpec = ControlSpec(0.ampdb, 12, \db, step: 0.5, default: -12.0, units: " db");
 	var fadeInSpec = ControlSpec(0.001, 5.0, \lin, step: 0.1, default: 1.8, units: " secs");
@@ -47,7 +47,7 @@
 	fastSearch = {|dir, fileTypes, searchString, itrFunc, completeFunc|
 
 		// start building find command string
-		var cs = ("find % \\(").format(dir);
+		var cs = ("find % ").format(dir);
 
 	//	var cs = ("find % -iname \"*%*\" -a \\(").format(dir,searchString);
 		var data = 0;
@@ -55,7 +55,7 @@
 
 		// itr each word in search string
 		searchString.split($ ).do({|ss|
-				cs = cs ++ (" -iname \"*%*\" -%").format(ss,"a");//(o)R/(a)ND
+				cs = cs ++ ("\\(" ++ " -iname \"*%*\" -%").format(ss,"a");//(o)R/(a)ND
 		
 		});
 
@@ -77,6 +77,44 @@
 
 	};
 
+	fastFilterSearch = {|dir, fileTypes, searchString, itrFunc, completeFunc|
+
+		// start building find command string
+		var cs = ("find % ").format(dir);
+
+	//	var cs = ("find % -iname \"*%*\" -a \\(").format(dir,searchString);
+		var data = 0;
+		var regex = ".*\.\(";
+		var fileEx = "";
+
+		// itr each word in search string
+		searchString.split($ ).do({|ss|
+				cs = cs ++ ("-iname \"*%*\"").format(ss);//(o)R/(a)ND
+		
+		});
+
+		// send it off and get results, fast
+		cs.postln;
+		data = cs.unixCmdGetStdOutLines;
+
+		// now lets filter out
+		data = data.select({|item|
+			fileEx = item.splitext.last; //get the end of files (allows for .asd)
+			// fileEx.postln;
+			if(fileEx != nil,{
+				regex = ".*\.\(";
+				fileTypes.split($|).do({|type|
+					regex = regex ++ type ++ "\|";
+				});
+				regex = regex ++ "\)";
+				".*\.\(wav\|aif\)".matchRegexp("."++fileEx); //male it look like extension
+			},{false});
+		});
+		// data.postln;
+		data.do({|o,i|itrFunc.(o,i)});
+		completeFunc.(data.size);
+
+	};
 	//------------------------------------------------------
 	// addStack
 	//------------------------------------------------------
@@ -163,17 +201,18 @@
 
 
 		var buttonAction = {|button|
+			var children = button.parent.children(View);
+
 			switch(button.value,
 				0,{
-					button.parent.children(View).do({|o|
+					children.do({|o|
 						o.enabled_(true)
 					});
 
 					},
 				1,{		
-					var c = button.parent.children(View);
-					c.remove(button);
-					c.do({|o|
+					children.remove(button);
+					children.do({|o|
 						o.enabled_(false)
 					});
 				});
@@ -440,7 +479,7 @@
 			//searchViews[i].layout.index = stackIndexes.find([\resultsIdx]);
 
 			searchViews[i].layout.index = stackIndexes.find([\resultsIdx]);
-			fastSearch.(
+			fastFilterSearch.(
 				dirPath,
 				"wav|wave|aif|aiff|mp3",
 				a.string,// using '.' will give every file
