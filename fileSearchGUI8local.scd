@@ -30,7 +30,7 @@
 	var fastSearch, fastFilterSearch;
 
 	//var dirPath = "/Volumes/Steph2015/*".postln;
-	var dirPath = "/Volumes/Steph2012/SFX/*".postln;
+	var dirPath = "/Volumes/Steph2013/SFX/*".postln;
 	// var dirPath = "~/Music/*";
 	// var dirPath = "~/Music/VoiceLab/SFX/*";
 
@@ -107,7 +107,7 @@
 					regex = regex ++ type ++ "\|";
 				});
 				regex = regex ++ "\)";
-				".*\.\(wav\|aif\)".matchRegexp("."++fileEx); //male it look like extension
+				".*\.\(wav\|aif\|caf\)".matchRegexp("."++fileEx); //male it look like extension
 			},{false});
 		});
 		// data.postln;
@@ -271,14 +271,21 @@
 				1,{"play oneshot...".postln;
 
 					oneShotSynth = makeSynth.(buffer,\oneShotSynthMono,\oneShotSynthStereo);
-					OSCpathResponder(s.addr, ['/n_end', oneShotSynth.nodeID], { |time, resp, msg| 
-					        resp.remove;
-					        {button.valueAction = 0;}.defer;
-					}).add; 
+
+					oneShotSynth.onFree({
+				        {button.valueAction = 0;}.defer;
+					});
+
+					// OSCFunc.new(func, path, srcID, recvPort, argTemplate, dispatcher)
+					// OSCpathResponder.new(addr, cmdPath, action)
+					// OSCpathResponder(s.addr, ['/n_end', oneShotSynth.nodeID], { |time, resp, msg| 
+					//         resp.remove;
+					//         {button.valueAction = 0;}.defer;
+					// }).add; 
 				},
 				0,{	"stop oneshot".postln;
 					//oneShotSynth.set(\gate,0);
-					oneShotSynth.free;
+					// oneShotSynth.free;
 				}
 			);
 		};
@@ -671,14 +678,14 @@
 	};
 
 
-	// buildWindow.();
+	buildWindow.();
 
-	FileDialog({ |paths|
-		dirPath = paths[0];
-		buildWindow.();
-	}, {
-		buildWindow.();
-    }, fileMode: 2);
+	// FileDialog({ |paths|
+	// 	dirPath = paths[0];
+	// 	buildWindow.();
+	// }, {
+	// 	buildWindow.();
+ //    }, fileMode: 2);
 
 
 
