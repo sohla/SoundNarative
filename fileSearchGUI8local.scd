@@ -107,7 +107,7 @@
 					regex = regex ++ type ++ "\|";
 				});
 				regex = regex ++ "\)";
-				".*\.\(wav\|aif\|caf\)".matchRegexp("."++fileEx); //male it look like extension
+				".*\.\(wav\|aif\|caf\)".matchRegexp("."++fileEx); //make it look like extension
 			},{false});
 		});
 		// data.postln;
@@ -488,7 +488,7 @@
 			searchViews[i].layout.index = stackIndexes.find([\resultsIdx]);
 			fastFilterSearch.(
 				dirPath,
-				"wav|wave|aif|aiff|mp3",
+				"wav|wave|aif|aiff|mp3|caf",
 				a.string,// using '.' will give every file
 				{|a,count|
 			
@@ -699,14 +699,14 @@
 		var son;
 		son = PlayBuf.ar(1,bufnum,BufRateScale.kr(bufnum)*pitch, trigger:gate, loop:1, doneAction:0)
 			* EnvGen.kr(Env.asr(attack,1.0,decay,\sine), gate, doneAction:2) * gain.dbamp;
-		Out.ar(0, son!2);
+		Out.ar(0, son!4);
 	}).load(s);
 
 	SynthDef("loopSynthStereo", { |bufnum = 0, gain = 0.0, gate = 0, attack=2.8, decay=2.8, pitch = 1|
 		var son;
 		son = PlayBuf.ar(2,bufnum,BufRateScale.kr(bufnum)*pitch, trigger:gate, loop:1, doneAction:0)
 			* EnvGen.kr(Env.asr(attack,1.0,decay,\sine), gate, doneAction:2) * gain.dbamp;
-		Out.ar(0, son);
+		Out.ar(0, son!4);
 	}).load(s);
 
 	SynthDef("oneShotSynthMono", { |bufnum = 0, gain = 0.0, gate = 0, attack=2.8, decay=2.8, pitch = 1|
@@ -715,7 +715,7 @@
 		son = PlayBuf.ar(1, bufnum, BufRateScale.kr(bufnum)*pitch*gate, trigger:gate, loop:0, doneAction:2) 
 			//* EnvGen.kr(Env.linen(attack, (BufDur.kr(bufnum) * pitch.reciprocal) - attack - decay, decay), gate, doneAction:0) 
 			* gain.dbamp;
-		Out.ar(0, son!2);
+		Out.ar(0, son!4);
 	}).load(s);
 
 	SynthDef("oneShotSynthStereo", { |bufnum = 0, gain = 0.0, gate = 0, attack=2.8, decay=2.8, pitch = 1|
@@ -723,10 +723,9 @@
 		son = PlayBuf.ar(2, bufnum, BufRateScale.kr(bufnum)*pitch*gate, trigger:gate, loop:0, doneAction:2) 
 			//* EnvGen.kr(Env.linen(attack, (BufDur.kr(bufnum) * pitch.reciprocal) - attack - decay, decay), gate, doneAction:0) 
 			* gain.dbamp;
-		Out.ar(0, son);
+		Out.ar(0, son!4);
 	}).load(s);
 
 
 	)
-
 
