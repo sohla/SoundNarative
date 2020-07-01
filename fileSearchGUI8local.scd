@@ -678,14 +678,14 @@
 	};
 
 
-	buildWindow.();
+	// buildWindow.();
 
-	// FileDialog({ |paths|
-	// 	dirPath = paths[0];
-	// 	buildWindow.();
-	// }, {
-	// 	buildWindow.();
- //    }, fileMode: 2);
+	FileDialog({ |paths|
+		dirPath = paths[0];
+		buildWindow.();
+	}, {
+		buildWindow.();
+    }, fileMode: 2);
 
 
 
